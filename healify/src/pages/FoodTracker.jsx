@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Sparkles, Edit3, Trash2, Check, X as XIcon, Droplet, AlertTriangle, Info, ChevronRight } from 'lucide-react';
+import { Camera, Sparkles, Edit3, Trash2, Check, X as XIcon, Droplet, AlertTriangle, Info } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { analyzeFood, correctFood, checkFoodInteractions, fileToBase64 } from '../utils/gemini';
 import LoadingSpinner from '../components/LoadingSpinner';

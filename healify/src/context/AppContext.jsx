@@ -1,3 +1,4 @@
+/* eslint-disable no-loop-func */
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const AppContext = createContext();

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Camera, Sparkles, X as XIcon, Phone, Shield, ListChecks } from 'lucide-react';
+import { AlertTriangle, Camera, Sparkles, X as XIcon, Shield, ListChecks } from 'lucide-react';
 import { getEmergencyHelp, fileToBase64 } from '../utils/gemini';
 import { useApp } from '../context/AppContext';
 import LoadingSpinner from '../components/LoadingSpinner';
