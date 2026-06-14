@@ -1,0 +1,126 @@
+/* ===== HEALIFY DESIGN SYSTEM ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Colors — fresh medical palette */
+  --bg: #fafbfc;
+  --bg-soft: #f4f6f8;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --border: #e6eaee;
+  --border-strong: #d1d8e0;
+
+  /* Brand */
+  --primary: #10b981;
+  --primary-dark: #059669;
+  --primary-soft: #ecfdf5;
+  --primary-mid: #6ee7b7;
+
+  /* Accents */
+  --accent-blue: #3b82f6;
+  --accent-blue-soft: #eff6ff;
+  --accent-orange: #f59e0b;
+  --accent-orange-soft: #fffbeb;
+  --accent-red: #ef4444;
+  --accent-red-soft: #fef2f2;
+  --accent-purple: #8b5cf6;
+  --accent-purple-soft: #f5f3ff;
+
+  /* Text */
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --text-muted: #cbd5e1;
+
+  /* Radius & shadows */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.05);
+
+  /* Fonts */
+  --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-display: 'Instrument Serif', serif;
+
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+input, textarea, select { font-family: inherit; outline: none; }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeRight {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes barFill {
+  from { width: 0; }
+}
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.fade-in   { animation: fadeIn 0.3s ease both; }
+.fade-up   { animation: fadeUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.fade-right{ animation: fadeRight 0.35s ease both; }
+
+/* Utility classes */
+.text-display { font-family: var(--font-display); font-style: italic; font-weight: 400; }
+.text-muted { color: var(--text-3); }
