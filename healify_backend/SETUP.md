@@ -12,7 +12,7 @@
    ```
 6. Replace `<username>` and `<password>` with the database user you created in step 3, and add `/healify` before the `?`:
    ```
-   mongodb+srv://myuser:mypass123@cluster0.xxxxx.mongodb.net/healify?retryWrites=true&w=majority
+   mongodb+srv://<db_username>:<db_password>@cluster.mongodb.net/healify
    ```
 
 ## STEP 2: Configure the backend (~2 min)
@@ -24,7 +24,7 @@
 Your `.env` should look like:
 ```
 MONGODB_URI=mongodb+srv://myuser:mypass123@cluster0.xxxxx.mongodb.net/healify?retryWrites=true&w=majority
-JWT_SECRET=kj3h9f8sdf73h4kjh5g8j3h4k5jh34kjh5g8j3hk
+JWT_SECRET=your_random_secret_here
 PORT=5000
 ```
 
