@@ -1,7 +1,8 @@
 const SESSION_KEY = 'healify_auth_session';
 const USERS_KEY = 'healify_mock_users';
-const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'mock';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const MIGRATION_KEY = 'healify_migration_done';
+const AUTH_MODE = process.env.REACT_APP_AUTH_MODE || 'hybrid';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const wait = (ms = 450) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -49,6 +50,27 @@ const mockLogin = async ({ email, password }) => {
   return saveSession({ token: `mock-token-${Date.now()}`, user });
 };
 
+const migrateLocalUsers = async () => {
+  if (AUTH_MODE === 'mock' || localStorage.getItem(MIGRATION_KEY) === 'true') return;
+
+  for (const user of readUsers()) {
+    try {
+      await request('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: user.name,
+          email: user.email,
+          password: user.password,
+        }),
+      });
+    } catch (error) {
+      console.log(`Backend migration skipped for ${user.email}: ${error.message}`);
+    }
+  }
+
+  localStorage.setItem(MIGRATION_KEY, 'true');
+};
+
 export const authService = {
   getSession() {
     try {
@@ -59,24 +81,37 @@ export const authService = {
     }
   },
   async login(values) {
-    if (AUTH_MODE === 'api') {
-      return saveSession(await request('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(values),
-      }));
+    if (AUTH_MODE !== 'mock') {
+      try {
+        return saveSession(await request('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify(values),
+        }));
+      } catch (error) {
+        console.log('Backend login failed, falling back to local login');
+      }
     }
     return mockLogin(values);
   },
   async signup(values) {
-    if (AUTH_MODE === 'api') {
-      return saveSession(await request('/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify(values),
-      }));
+    const localSession = await mockSignup(values);
+
+    if (AUTH_MODE !== 'mock') {
+      try {
+        await request('/auth/signup', {
+          method: 'POST',
+          body: JSON.stringify(values),
+        });
+      } catch (error) {
+        console.log('Backend signup failed, local signup preserved');
+      }
     }
-    return mockSignup(values);
+
+    return localSession;
   },
   logout() {
     localStorage.removeItem(SESSION_KEY);
   },
 };
+
+void migrateLocalUsers();
