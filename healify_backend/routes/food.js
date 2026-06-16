@@ -55,7 +55,22 @@ router.get('/today', async (req, res) => {
 // ═══════════════════════════════════════
 router.post('/', async (req, res) => {
   try {
-    const entry = await FoodEntry.create({ ...req.body, user: req.userId, time: new Date() });
+    const requestedTime = new Date(req.body.time);
+    const entry = await FoodEntry.create({
+      user: req.userId,
+      food_name: req.body.food_name,
+      calories: req.body.calories,
+      protein: req.body.protein,
+      carbs: req.body.carbs,
+      fiber: req.body.fiber,
+      fat: req.body.fat,
+      portion_note: req.body.portion_note,
+      confidence: req.body.confidence,
+      alternative_foods: req.body.alternative_foods,
+      food_tags: req.body.food_tags,
+      thumb: req.body.thumb,
+      time: Number.isNaN(requestedTime.getTime()) ? new Date() : requestedTime,
+    });
     res.status(201).json(entry);
   } catch (err) {
     res.status(500).json({ error: err.message });
