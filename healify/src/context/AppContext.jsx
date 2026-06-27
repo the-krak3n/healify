@@ -17,6 +17,7 @@ const defaultState = {
   medicines: [],
   foodMedWarnings: [],
   mealSuggestion: null,
+  lastTrackedDate: null,
 };
 
 // ── Date helpers ─────────────────────────────────────
@@ -108,6 +109,7 @@ export function AppProvider({ children }) {
           foodLog: cleanFoodLog,
           totals: recalculatedTotals,
           water: waterGlasses,
+          lastTrackedDate: targetToday,
         }));
       } catch (err) {
         console.error('Failed to sync backend data to context:', err);
@@ -116,6 +118,44 @@ export function AppProvider({ children }) {
 
     fetchUserData();
   }, [token]);
+
+  useEffect(() => {
+    const checkDateAndReset = () => {
+      const today = todayKey();
+      if (state.lastTrackedDate !== today) {
+        const getLocalDateString = (time) => {
+          const d = new Date(time);
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        };
+
+        const todayEntries = (state.foodLog || []).filter(entry => {
+          try {
+            return getLocalDateString(entry.time) === today;
+          } catch (e) {
+            return false;
+          }
+        });
+
+        const recalculatedTotals = todayEntries.reduce((acc, entry) => ({
+          calories: acc.calories + (entry.calories || 0),
+          protein:  acc.protein  + (entry.protein  || 0),
+          carbs:    acc.carbs    + (entry.carbs    || 0),
+          fiber:    acc.fiber    + (entry.fiber    || 0),
+        }), { calories: 0, protein: 0, carbs: 0, fiber: 0 });
+
+        setState(s => ({
+          ...s,
+          totals: recalculatedTotals,
+          lastTrackedDate: today,
+        }));
+      }
+    };
+
+    checkDateAndReset();
+
+    const interval = setInterval(checkDateAndReset, 60000);
+    return () => clearInterval(interval);
+  }, [state.lastTrackedDate, state.foodLog]);
 
   // ── Profile ──────────────────────────────────────────
   const setProfile = async (profile) => {
