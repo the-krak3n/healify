@@ -118,22 +118,63 @@ export function AppProvider({ children }) {
   }, [token]);
 
   // ── Profile ──────────────────────────────────────────
-  const setProfile = (profile) => setState(s => ({ ...s, profile }));
+  const setProfile = async (profile) => {
+    try {
+      const updated = await authorizedRequest('/profile', {
+        method: 'PUT',
+        body: JSON.stringify(profile),
+      });
+      setState(s => ({ ...s, profile: updated }));
+    } catch (err) {
+      console.error('Failed to save profile to backend:', err);
+      setState(s => ({ ...s, profile }));
+    }
+  };
 
   // ── Food ─────────────────────────────────────────────
-  const addFoodEntry = (entry) =>
-    setState(s => ({
-      ...s,
-      foodLog: [{ ...entry, id: Date.now(), time: new Date().toISOString() }, ...s.foodLog],
-      totals: {
-        calories: s.totals.calories + (entry.calories || 0),
-        protein:  s.totals.protein  + (entry.protein  || 0),
-        carbs:    s.totals.carbs    + (entry.carbs    || 0),
-        fiber:    s.totals.fiber    + (entry.fiber    || 0),
-      }
-    }));
+  const addFoodEntry = async (entry) => {
+    const tempId = Date.now();
+    const time = new Date().toISOString();
+    try {
+      const saved = await authorizedRequest('/food', {
+        method: 'POST',
+        body: JSON.stringify({ ...entry, time }),
+      });
+      const cleanEntry = { ...saved, id: saved._id || saved.id };
+      setState(s => ({
+        ...s,
+        foodLog: [cleanEntry, ...s.foodLog],
+        totals: {
+          calories: s.totals.calories + (cleanEntry.calories || 0),
+          protein:  s.totals.protein  + (cleanEntry.protein  || 0),
+          carbs:    s.totals.carbs    + (cleanEntry.carbs    || 0),
+          fiber:    s.totals.fiber    + (cleanEntry.fiber    || 0),
+        }
+      }));
+    } catch (err) {
+      console.error('Failed to add food entry to backend:', err);
+      setState(s => ({
+        ...s,
+        foodLog: [{ ...entry, id: tempId, time }, ...s.foodLog],
+        totals: {
+          calories: s.totals.calories + (entry.calories || 0),
+          protein:  s.totals.protein  + (entry.protein  || 0),
+          carbs:    s.totals.carbs    + (entry.carbs    || 0),
+          fiber:    s.totals.fiber    + (entry.fiber    || 0),
+        }
+      }));
+    }
+  };
 
-  const removeFoodEntry = (id) =>
+  const removeFoodEntry = async (id) => {
+    const isValidObjectId = (val) => typeof val === 'string' && /^[0-9a-fA-F]{24}$/.test(val);
+    if (isValidObjectId(id)) {
+      try {
+        await authorizedRequest(`/food/${id}`, { method: 'DELETE' });
+      } catch (err) {
+        console.error('Failed to delete food entry from backend:', err);
+      }
+    }
     setState(s => {
       const entry = s.foodLog.find(e => e.id === id);
       if (!entry) return s;
@@ -148,6 +189,7 @@ export function AppProvider({ children }) {
         }
       };
     });
+  };
 
   const correctFoodEntry = (id, newData) =>
     setState(s => {
@@ -166,7 +208,17 @@ export function AppProvider({ children }) {
     });
 
   // ── Water ─────────────────────────────────────────────
-  const setWater = (n) => setState(s => ({ ...s, water: n }));
+  const setWater = async (n) => {
+    try {
+      await authorizedRequest('/water/today', {
+        method: 'PUT',
+        body: JSON.stringify({ glasses: n }),
+      });
+    } catch (err) {
+      console.error('Failed to sync water to backend:', err);
+    }
+    setState(s => ({ ...s, water: n }));
+  };
 
   // ── Cross-module warnings ──────────────────────────────
   const setFoodMedWarnings = (warnings) => setState(s => ({ ...s, foodMedWarnings: warnings }));
@@ -177,25 +229,66 @@ export function AppProvider({ children }) {
   // ═══════════════════════════════════════════════
 
   /// med = { name, strength, frequency, times: ['08:00', '14:00', ...] }
-  const addMedicine = (med) =>
-    setState(s => ({
-      ...s,
-      medicines: [...s.medicines, {
-        id: Date.now(),
-        name: med.name,
-        strength: med.strength || '',
-        frequency: med.frequency,
-        times: [...med.times].sort(),
-        startDate: todayKey(),
-        doseHistory: [],
-      }]
-    }));
+  const addMedicine = async (med) => {
+    const tempId = Date.now();
+    const startDate = todayKey();
+    try {
+      const saved = await authorizedRequest('/medicines', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: med.name,
+          strength: med.strength || '',
+          frequency: med.frequency,
+          times: [...med.times].sort(),
+        }),
+      });
+      const cleanMed = { ...saved, id: saved._id || saved.id };
+      setState(s => ({
+        ...s,
+        medicines: [...s.medicines, cleanMed],
+      }));
+    } catch (err) {
+      console.error('Failed to add medicine to backend:', err);
+      setState(s => ({
+        ...s,
+        medicines: [...s.medicines, {
+          id: tempId,
+          name: med.name,
+          strength: med.strength || '',
+          frequency: med.frequency,
+          times: [...med.times].sort(),
+          startDate,
+          doseHistory: [],
+        }],
+      }));
+    }
+  };
 
-  const removeMedicine = (id) =>
+  const removeMedicine = async (id) => {
+    const isValidObjectId = (val) => typeof val === 'string' && /^[0-9a-fA-F]{24}$/.test(val);
+    if (isValidObjectId(id)) {
+      try {
+        await authorizedRequest(`/medicines/${id}`, { method: 'DELETE' });
+      } catch (err) {
+        console.error('Failed to remove medicine from backend:', err);
+      }
+    }
     setState(s => ({ ...s, medicines: s.medicines.filter(m => m.id !== id) }));
+  };
 
   /// Mark ONE dose slot (date + time) as 'taken' | 'skipped'
-  const markDose = (medId, date, time, status) =>
+  const markDose = async (medId, date, time, status) => {
+    const isValidObjectId = (val) => typeof val === 'string' && /^[0-9a-fA-F]{24}$/.test(val);
+    if (isValidObjectId(medId)) {
+      try {
+        await authorizedRequest(`/medicines/${medId}/dose`, {
+          method: 'POST',
+          body: JSON.stringify({ date, time, status }),
+        });
+      } catch (err) {
+        console.error('Failed to sync dose history to backend:', err);
+      }
+    }
     setState(s => ({
       ...s,
       medicines: s.medicines.map(m => {
@@ -213,6 +306,7 @@ export function AppProvider({ children }) {
         return { ...m, doseHistory: newHistory };
       })
     }));
+  };
 
   /// Get today's doses for a medicine: [{ time, status }]
   /// status: 'taken' | 'skipped' | 'pending' (due, no action yet) | 'upcoming' (time hasn't arrived yet)
