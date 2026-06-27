@@ -1,5 +1,7 @@
 /* eslint-disable no-loop-func */
 import { createContext, useContext, useState, useEffect } from 'react';
+import { authorizedRequest } from '../services/authService';
+import { useAuth } from './AuthContext';
 
 const AppContext = createContext();
 export const useApp = () => useContext(AppContext);
@@ -37,6 +39,7 @@ const isTimePassedToday = (timeStr) => {
 };
 
 export function AppProvider({ children }) {
+  const { token } = useAuth();
   const [state, setState] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -53,6 +56,66 @@ export function AppProvider({ children }) {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
   }, [state]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!token) return;
+
+      try {
+        const [profile, medicines, food, waterToday] = await Promise.all([
+          authorizedRequest('/profile'),
+          authorizedRequest('/medicines'),
+          authorizedRequest('/food'),
+          authorizedRequest('/water/today'),
+        ]);
+
+        const cleanMedicines = (medicines || []).map(m => ({
+          ...m,
+          id: m._id || m.id,
+          times: Array.isArray(m.times) ? m.times : [],
+          doseHistory: Array.isArray(m.doseHistory) ? m.doseHistory : [],
+        }));
+
+        const cleanFoodLog = (food || []).map(f => ({
+          ...f,
+          id: f._id || f.id,
+        }));
+
+        const targetToday = todayKey();
+        const todayEntries = cleanFoodLog.filter(entry => {
+          try {
+            const entryDate = new Date(entry.time);
+            const entryKey = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
+            return entryKey === targetToday;
+          } catch (e) {
+            return false;
+          }
+        });
+
+        const recalculatedTotals = todayEntries.reduce((acc, entry) => ({
+          calories: acc.calories + (entry.calories || 0),
+          protein:  acc.protein  + (entry.protein  || 0),
+          carbs:    acc.carbs    + (entry.carbs    || 0),
+          fiber:    acc.fiber    + (entry.fiber    || 0),
+        }), { calories: 0, protein: 0, carbs: 0, fiber: 0 });
+
+        const waterGlasses = waterToday?.glasses || 0;
+
+        setState(s => ({
+          ...s,
+          profile: profile || null,
+          medicines: cleanMedicines,
+          foodLog: cleanFoodLog,
+          totals: recalculatedTotals,
+          water: waterGlasses,
+        }));
+      } catch (err) {
+        console.error('Failed to sync backend data to context:', err);
+      }
+    };
+
+    fetchUserData();
+  }, [token]);
 
   // ── Profile ──────────────────────────────────────────
   const setProfile = (profile) => setState(s => ({ ...s, profile }));

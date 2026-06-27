@@ -44,7 +44,7 @@ const request = async (path, options = {}) => {
   return data;
 };
 
-const authorizedRequest = (path, options = {}, session) => {
+export const authorizedRequest = (path, options = {}, session) => {
   const token = session?.token || readSession()?.token;
   if (!token) throw new Error('Missing authentication session.');
   return request(path, {
